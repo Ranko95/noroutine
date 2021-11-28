@@ -67,11 +67,41 @@ const workerResults = ({ id, error, result }) => {
   else task.resolve(result);
 };
 
+const listenEvents = (worker) => {
+  worker.on('message', workerResults);
+  worker.on('exit', (code) => {
+    const isUnexpectedExit = code === 1 && balancer.status !== STATUS_FINALIZATION;
+    if (isUnexpectedExit) {
+      restart(worker);
+    }
+  });
+};
+
+const restart = (worker) => {
+  const failedWorkerIndex = balancer.pool.findIndex(
+    (w) => w.threadId === worker.threadId
+  );
+  if (failedWorkerIndex !== -1) {
+    const workerData = {
+      module: balancer.target,
+      timeout: balancer.options.timeout,
+    };
+    const newWorker = new Worker(WORKER_PATH, { workerData });
+    const elu = newWorker.performance.eventLoopUtilization();
+    balancer.pool[failedWorkerIndex] = newWorker;
+    balancer.elu[failedWorkerIndex] = elu;
+    listenEvents(newWorker);
+    if (balancer.current.threadId === worker.threadId) {
+      monitoring();
+    }
+  }
+};
+
 const register = (worker) => {
   balancer.pool.push(worker);
   const elu = worker.performance.eventLoopUtilization();
   balancer.elu.push(elu);
-  worker.on('message', workerResults);
+  listenEvents(worker);
 };
 
 const findModule = (module) => {
