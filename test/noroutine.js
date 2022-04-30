@@ -4,7 +4,7 @@ const metatests = require('metatests');
 const metautil = require('metautil');
 const noroutine = require('..');
 const module1 = require('./module1.js');
-const module2 = require('./module2');
+const module2 = require('./module2.js');
 
 noroutine.init({
   modules: [module1, module2],

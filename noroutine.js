@@ -93,6 +93,10 @@ const init = (options) => {
   if (balancer.status !== STATUS_NOT_INITIALIZED) {
     throw new Error('Can not initialize noroutine more than once');
   }
+  if (options.debug) {
+    console.log("Running in the debug mode");
+    return;
+  }
   balancer.status = STATUS_INITIALIZATION;
   for (const module of options.modules) {
     if (typeof module !== 'object') {
